@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Viewer</title>
+    <title>Access Manager - Duration Mode</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -11,10 +11,11 @@
             --card: #ffffff;
             --text: #1e293b;
             --success: #22c55e;
+            --warning: #f59e0b;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -24,54 +25,46 @@
             align-items: center;
         }
 
-        .container {
-            max-width: 800px;
-            width: 100%;
-        }
+        .container { max-width: 800px; width: 100%; }
 
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        header { text-align: center; margin-bottom: 25px; }
 
         .live-clock {
             background: var(--primary);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 10px 20px;
+            border-radius: 30px;
             font-weight: bold;
+            font-family: monospace;
             display: inline-block;
-            margin-top: 10px;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
 
         /* Tabs */
         .tabs {
             display: flex;
             overflow-x: auto;
-            gap: 10px;
-            padding: 10px 0;
+            gap: 8px;
+            padding-bottom: 15px;
             margin-bottom: 20px;
             scrollbar-width: none;
         }
+        .tabs::-webkit-scrollbar { display: none; }
 
         .tab {
             background: #e2e8f0;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 18px;
             border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
             white-space: nowrap;
-            transition: 0.3s;
+            color: #64748b;
         }
 
-        .tab.active {
-            background: var(--primary);
-            color: white;
-        }
+        .tab.active { background: var(--primary); color: white; }
 
-        /* Table/Card Style */
+        /* Cards */
         .slot-card {
             background: var(--card);
             margin-bottom: 12px;
@@ -80,48 +73,36 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border: 2px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
         }
 
         .slot-card.active {
-            border-color: var(--success);
+            border: 2px solid var(--success);
             background-color: #f0fdf4;
-            animation: glow 2s infinite ease-in-out;
+            transform: scale(1.02);
         }
 
-        .time-info {
-            display: flex;
-            flex-direction: column;
-        }
+        .time-info { display: flex; flex-direction: column; }
+        .time-range { font-size: 1.1rem; font-weight: bold; font-family: monospace; }
+        .duration-tag { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
 
-        .time-range {
-            font-size: 1.2rem;
-            font-weight: bold;
-            font-family: monospace;
-        }
-
-        .status-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #64748b;
-        }
-
-        .password-display {
-            font-size: 1.5rem;
+        .passcode {
+            font-size: 1.4rem;
             font-weight: 800;
-            font-family: 'Courier New', Courier, monospace;
             color: var(--primary);
             background: #eff6ff;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 10px;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
 
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        .badge-live {
+            color: var(--success);
+            font-size: 0.7rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
         }
     </style>
 </head>
@@ -129,7 +110,7 @@
 
 <div class="container">
     <header>
-        <h1>Access Passwords</h1>
+        <h1>Access Control</h1>
         <div id="clock" class="live-clock">00:00:00</div>
     </header>
 
@@ -138,196 +119,202 @@
 </div>
 
 <script>
-    // 1. PASTE YOUR RULES TEXT HERE
-    const rawRules = `
-    const PassRule rules[] = {
-    {0, HM(8,0), HM(12,30), 482818},
-    {0, HM(12,30), HM(14,0), 740604},
-    {0, HM(14,0), HM(15,30), 101566},
-    {0, HM(15,30), HM(17,0), 749881},
-    {0, HM(17,0), HM(18,30), 368583},
-    {0, HM(18,30), HM(20,0), 482890},
-    {0, HM(20,0), HM(21,30), 103072},
-    {0, HM(21,30), HM(23,0), 766020},
-    {0, HM(23,0), HM(0,30), 796696},
-    {0, HM(0,30), HM(2,0), 440015},
-    {0, HM(2,0), HM(3,30), 810810},
-    {0, HM(3,30), HM(5,0), 771098},
-    {0, HM(5,0), HM(6,30), 738401},
-    {0, HM(6,30), HM(8,0), 439015},
-    {1, HM(8,0), HM(12,30), 121214},
-    {1, HM(12,30), HM(14,0), 630148},
-    {1, HM(14,0), HM(15,30), 101544},
-    {1, HM(15,30), HM(17,0), 513763},
-    {1, HM(17,0), HM(18,30), 365985},
-    {1, HM(18,30), HM(20,0), 989879},
-    {1, HM(20,0), HM(21,30), 626879},
-    {1, HM(21,30), HM(23,0), 456564},
-    {1, HM(23,0), HM(0,30), 908466},
-    {1, HM(0,30), HM(2,0), 294826},
-    {1, HM(2,0), HM(3,30), 573159},
-    {1, HM(3,30), HM(5,0), 381472},
-    {1, HM(5,0), HM(6,30), 746293},
-    {1, HM(6,30), HM(8,0), 619427},
-    {2, HM(8,0), HM(12,30), 000000},
-    {2, HM(12,30), HM(14,0), 000000},
-    {2, HM(14,0), HM(15,30), 101523},
-    {2, HM(15,30), HM(17,0), 643598},
-    {2, HM(17,0), HM(18,30), 988349},
-    {2, HM(18,30), HM(20,0), 000000},
-    {2, HM(20,0), HM(21,30), 000000},
-    {2, HM(21,30), HM(23,0), 000000},
-    {2, HM(23,0), HM(0,30), 338495},
-    {2, HM(0,30), HM(2,0), 000000},
-    {2, HM(2,0), HM(3,30), 000000},
-    {2, HM(3,30), HM(5,0), 000000},
-    {2, HM(5,0), HM(6,30), 000000},
-    {2, HM(6,30), HM(8,0), 000000},
-    {3, HM(8,0), HM(12,30), 000000},
-    {3, HM(12,30), HM(14,0), 000000},
-    {3, HM(14,0), HM(15,30), 130152},
-    {3, HM(15,30), HM(17,0), 235098},
-    {3, HM(17,0), HM(18,30), 286599},
-    {3, HM(18,30), HM(20,0), 000000},
-    {3, HM(20,0), HM(21,30), 103072},
-    {3, HM(21,30), HM(23,0), 000000},
-    {3, HM(23,0), HM(0,30), 628987},
-    {3, HM(0,30), HM(2,0), 000000},
-    {3, HM(2,0), HM(3,30), 000000},
-    {3, HM(3,30), HM(5,0), 000000},
-    {3, HM(5,0), HM(6,30), 000000},
-    {3, HM(6,30), HM(8,0), 000000},
-    {4, HM(8,0), HM(12,30), 000000},
-    {4, HM(12,30), HM(14,0), 000000},
-    {4, HM(14,0), HM(15,30), 906866},
-    {4, HM(15,30), HM(17,0), 139978},
-    {4, HM(17,0), HM(18,30), 338820},
-    {4, HM(18,30), HM(20,0), 000000},
-    {4, HM(20,0), HM(21,30), 000000},
-    {4, HM(21,30), HM(23,0), 456564},
-    {4, HM(23,0), HM(0,30), 000000},
-    {4, HM(0,30), HM(2,0), 000000},
-    {4, HM(2,0), HM(3,30), 000000},
-    {4, HM(3,30), HM(5,0), 000000},
-    {4, HM(5,0), HM(6,30), 000000},
-    {4, HM(6,30), HM(8,0), 000000},
-    {5, HM(8,0), HM(12,30), 000000},
-    {5, HM(12,30), HM(14,0), 000000},
-    {5, HM(14,0), HM(15,30), 756564},
-    {5, HM(15,30), HM(17,0), 654571},
-    {5, HM(17,0), HM(18,30), 989879},
-    {5, HM(18,30), HM(20,0), 000000},
-    {5, HM(20,0), HM(21,30), 000000},
-    {5, HM(21,30), HM(23,0), 000000},
-    {5, HM(23,0), HM(0,30), 000000},
-    {5, HM(0,30), HM(2,0), 000000},
-    {5, HM(2,0), HM(3,30), 000000},
-    {5, HM(3,30), HM(5,0), 000000},
-    {5, HM(5,0), HM(6,30), 000000},
-    {5, HM(6,30), HM(8,0), 000000},
-    {6, HM(8,0), HM(12,30), 000000},
-    {6, HM(12,30), HM(14,0), 000000},
-    {6, HM(14,0), HM(15,30), 998510},
-    {6, HM(15,30), HM(17,0), 244378},
-    {6, HM(17,0), HM(18,30), 000000},
-    {6, HM(18,30), HM(20,0), 000000},
-    {6, HM(20,0), HM(21,30), 000000},
-    {6, HM(21,30), HM(23,0), 000000},
-    {6, HM(23,0), HM(0,30), 989831},
-    {6, HM(0,30), HM(2,0), 000000},
-    {6, HM(2,0), HM(3,30), 000000},
-    {6, HM(3,30), HM(5,0), 000000},
-    {6, HM(5,0), HM(6,30), 000000},
-    {6, HM(6,30), HM(8,0), 000000}
-    };`;
+    // DATA SOURCE
+    const rawData = `
+    { WEEK_MINUTE(0,0,30),  HM(1,30), 112233 },
+    { WEEK_MINUTE(0,2,0),   HM(1,30), 223344 },
+    { WEEK_MINUTE(0,3,30),  HM(1,30), 334455 },
+    { WEEK_MINUTE(0,5,0),   HM(1,30), 445566 },
+    { WEEK_MINUTE(0,6,30),  HM(1,30), 556677 },
+    { WEEK_MINUTE(0,8,0),   HM(4,30), 482818 },
+    { WEEK_MINUTE(0,12,30), HM(1,30), 740604 },
+    { WEEK_MINUTE(0,14,0),  HM(1,30), 101566 },
+    { WEEK_MINUTE(0,15,30), HM(1,30), 749881 },
+    { WEEK_MINUTE(0,17,0),  HM(1,30), 368583 },
+    { WEEK_MINUTE(0,18,30), HM(1,30), 482890 },
+    { WEEK_MINUTE(0,20,0),  HM(1,30), 103072 },
+    { WEEK_MINUTE(0,21,30), HM(1,30), 766020 },
+    { WEEK_MINUTE(0,23,0),  HM(1,30), 796696 },
+
+    { WEEK_MINUTE(1,0,30),  HM(1,30), 440015 },
+    { WEEK_MINUTE(1,2,0),   HM(1,30), 810810 },
+    { WEEK_MINUTE(1,3,30),  HM(1,30), 771098 },
+    { WEEK_MINUTE(1,5,0),   HM(1,30), 738401 },
+    { WEEK_MINUTE(1,6,30),  HM(1,30), 439015 },
+    { WEEK_MINUTE(1,8,0),   HM(4,30), 121214 },
+    { WEEK_MINUTE(1,12,30), HM(1,30), 630148 },
+    { WEEK_MINUTE(1,14,0),  HM(1,30), 101544 },
+    { WEEK_MINUTE(1,15,30), HM(1,30), 513763 },
+    { WEEK_MINUTE(1,17,0),  HM(1,30), 365985 },
+    { WEEK_MINUTE(1,18,30), HM(1,30), 989879 },
+    { WEEK_MINUTE(1,20,0),  HM(1,30), 626879 },
+    { WEEK_MINUTE(1,21,30), HM(1,30), 456564 },
+    { WEEK_MINUTE(1,23,0),  HM(1,30), 908466 },
+
+    { WEEK_MINUTE(2,0,30),  HM(1,30), 294826 },
+    { WEEK_MINUTE(2,2,0),   HM(1,30), 573159 },
+    { WEEK_MINUTE(2,3,30),  HM(1,30), 381472 },
+    { WEEK_MINUTE(2,5,0),   HM(1,30), 746293 },
+    { WEEK_MINUTE(2,6,30),  HM(1,30), 619427 },
+    { WEEK_MINUTE(2,8,0),   HM(4,30), 667788 },
+    { WEEK_MINUTE(2,12,30), HM(1,30), 778899 },
+    { WEEK_MINUTE(2,14,0),  HM(1,30), 101523 },
+    { WEEK_MINUTE(2,15,30), HM(1,30), 643598 },
+    { WEEK_MINUTE(2,17,0),  HM(1,30), 988349 },
+    { WEEK_MINUTE(2,18,30), HM(1,30), 889900 },
+    { WEEK_MINUTE(2,20,0),  HM(1,30), 990011 },
+    { WEEK_MINUTE(2,21,30), HM(1,30), 101112 },
+    { WEEK_MINUTE(2,23,0),  HM(1,30), 338495 },
+
+    { WEEK_MINUTE(3,0,30),  HM(1,30), 121314 },
+    { WEEK_MINUTE(3,2,0),   HM(1,30), 131415 },
+    { WEEK_MINUTE(3,3,30),  HM(1,30), 141516 },
+    { WEEK_MINUTE(3,5,0),   HM(1,30), 151617 },
+    { WEEK_MINUTE(3,6,30),  HM(1,30), 161718 },
+    { WEEK_MINUTE(3,8,0),   HM(4,30), 171819 },
+    { WEEK_MINUTE(3,12,30), HM(1,30), 181920 },
+    { WEEK_MINUTE(3,14,0),  HM(1,30), 130152 },
+    { WEEK_MINUTE(3,15,30), HM(1,30), 235098 },
+    { WEEK_MINUTE(3,17,0),  HM(1,30), 286599 },
+    { WEEK_MINUTE(3,18,30), HM(1,30), 192021 },
+    { WEEK_MINUTE(3,20,0),  HM(1,30), 103072 },
+    { WEEK_MINUTE(3,21,30), HM(1,30), 202122 },
+    { WEEK_MINUTE(3,23,0),  HM(1,30), 628987 },
+
+    { WEEK_MINUTE(4,0,30),  HM(1,30), 212223 },
+    { WEEK_MINUTE(4,2,0),   HM(1,30), 222324 },
+    { WEEK_MINUTE(4,3,30),  HM(1,30), 232425 },
+    { WEEK_MINUTE(4,5,0),   HM(1,30), 242526 },
+    { WEEK_MINUTE(4,6,30),  HM(1,30), 252627 },
+    { WEEK_MINUTE(4,8,0),   HM(4,30), 262728 },
+    { WEEK_MINUTE(4,12,30), HM(1,30), 272829 },
+    { WEEK_MINUTE(4,14,0),  HM(1,30), 906866 },
+    { WEEK_MINUTE(4,15,30), HM(1,30), 139978 },
+    { WEEK_MINUTE(4,17,0),  HM(1,30), 338820 },
+    { WEEK_MINUTE(4,18,30), HM(1,30), 282930 },
+    { WEEK_MINUTE(4,20,0),  HM(1,30), 293031 },
+    { WEEK_MINUTE(4,21,30), HM(1,30), 456564 },
+    { WEEK_MINUTE(4,23,0),  HM(1,30), 303132 },
+
+    { WEEK_MINUTE(5,0,30),  HM(1,30), 313233 },
+    { WEEK_MINUTE(5,2,0),   HM(1,30), 323334 },
+    { WEEK_MINUTE(5,3,30),  HM(1,30), 333435 },
+    { WEEK_MINUTE(5,5,0),   HM(1,30), 343536 },
+    { WEEK_MINUTE(5,6,30),  HM(1,30), 353637 },
+    { WEEK_MINUTE(5,8,0),   HM(4,30), 363738 },
+    { WEEK_MINUTE(5,12,30), HM(1,30), 373839 },
+    { WEEK_MINUTE(5,14,0),  HM(1,30), 756564 },
+    { WEEK_MINUTE(5,15,30), HM(1,30), 654571 },
+    { WEEK_MINUTE(5,17,0),  HM(1,30), 989879 },
+    { WEEK_MINUTE(5,18,30), HM(1,30), 383940 },
+    { WEEK_MINUTE(5,20,0),  HM(1,30), 394041 },
+    { WEEK_MINUTE(5,21,30), HM(1,30), 404142 },
+    { WEEK_MINUTE(5,23,0),  HM(1,30), 414243 },
+
+    { WEEK_MINUTE(6,0,30),  HM(1,30), 424344 },
+    { WEEK_MINUTE(6,2,0),   HM(1,30), 434445 },
+    { WEEK_MINUTE(6,3,30),  HM(1,30), 444546 },
+    { WEEK_MINUTE(6,5,0),   HM(1,30), 454647 },
+    { WEEK_MINUTE(6,6,30),  HM(1,30), 464748 },
+    { WEEK_MINUTE(6,8,0),   HM(4,30), 474849 },
+    { WEEK_MINUTE(6,12,30), HM(1,30), 484950 },
+    { WEEK_MINUTE(6,14,0),  HM(1,30), 998510 },
+    { WEEK_MINUTE(6,15,30), HM(1,30), 244378 },
+    { WEEK_MINUTE(6,17,0),  HM(1,30), 495051 },
+    { WEEK_MINUTE(6,18,30), HM(1,30), 505152 },
+    { WEEK_MINUTE(6,20,0),  HM(1,30), 515253 },
+    { WEEK_MINUTE(6,21,30), HM(1,30), 525354 },
+    { WEEK_MINUTE(6,23,0),  HM(1,30), 989831 }
+    `;
 
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    let currentActiveDay = new Date().getDay();
+    let activeDay = new Date().getDay();
 
-    // 2. Parser Logic
-    function parse() {
-        const regex = /\{(\d+),\s*HM\((\d+),(\d+)\),\s*HM\((\d+),(\d+)\),\s*([^}]+)\}/g;
+    // PARSER for { WEEK_MINUTE(d,h,m), HM(dh, dm), code }
+    function parseData() {
+        const regex = /WEEK_MINUTE\((\d+),(\d+),(\d+)\),\s*HM\((\d+),(\d+)\),\s*(\d+)/g;
         const rules = [];
-        let match;
-        while ((match = regex.exec(rawRules)) !== null) {
+        let m;
+        while ((m = regex.exec(rawData)) !== null) {
+            const day = parseInt(m[1]);
+            const startH = parseInt(m[2]);
+            const startM = parseInt(m[3]);
+            const durH = parseInt(m[4]);
+            const durM = parseInt(m[5]);
+            
+            // Calculate End Time
+            let endH = startH + durH;
+            let endM = startM + durM;
+            if (endM >= 60) { endH += 1; endM -= 60; }
+            if (endH >= 24) { endH -= 24; } // Crosses midnight
+
             rules.push({
-                day: parseInt(match[1]),
-                sh: parseInt(match[2]), sm: parseInt(match[3]),
-                eh: parseInt(match[4]), em: parseInt(match[5]),
-                code: match[6].trim().replace(/"/g, '')
+                day, startH, startM, endH, endM, durH, durM, 
+                code: m[6],
+                startTotal: startH * 60 + startM,
+                endTotal: (startH + durH) * 60 + (startM + durM)
             });
         }
         return rules;
     }
 
-    const allRules = parse();
+    const rules = parseData();
 
-    // 3. UI Rendering
     function renderTabs() {
-        const tabsEl = document.getElementById('dayTabs');
-        days.forEach((day, i) => {
-            const btn = document.createElement('button');
-            btn.className = `tab ${i === currentActiveDay ? 'active' : ''}`;
-            btn.innerText = day;
-            btn.onclick = () => {
-                currentActiveDay = i;
+        const tabs = document.getElementById('dayTabs');
+        days.forEach((d, i) => {
+            const b = document.createElement('button');
+            b.className = `tab ${i === activeDay ? 'active' : ''}`;
+            b.innerText = d;
+            b.onclick = () => {
+                activeDay = i;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
+                b.classList.add('active');
                 renderList();
             };
-            tabsEl.appendChild(btn);
+            tabs.appendChild(b);
         });
-    }
-
-    function isLive(rule) {
-        const now = new Date();
-        if (now.getDay() !== rule.day) return false;
-
-        const currentMins = now.getHours() * 60 + now.getMinutes();
-        const startMins = rule.sh * 60 + rule.sm;
-        let endMins = rule.eh * 60 + rule.em;
-
-        if (endMins < startMins) endMins += 1440; // Midnight wrap
-
-        return currentMins >= (startMins - 15) && currentMins <= (endMins + 15);
     }
 
     function renderList() {
-        const listEl = document.getElementById('passwordList');
-        listEl.innerHTML = '';
+        const list = document.getElementById('passwordList');
+        list.innerHTML = '';
         
-        const filtered = allRules.filter(r => r.day === currentActiveDay);
+        const now = new Date();
+        const curMin = now.getHours() * 60 + now.getMinutes();
+        const curDay = now.getDay();
 
-        filtered.forEach(rule => {
-            const active = isLive(rule);
+        rules.filter(r => r.day === activeDay).forEach(r => {
+            // Logic with 15 min margin
+            const isActive = (curDay === r.day) && 
+                             (curMin >= r.startTotal - 15) && 
+                             (curMin <= r.endTotal + 15);
+
             const card = document.createElement('div');
-            card.className = `slot-card ${active ? 'active' : ''}`;
+            card.className = `slot-card ${isActive ? 'active' : ''}`;
             
-            const startTime = `${rule.sh.toString().padStart(2, '0')}:${rule.sm.toString().padStart(2, '0')}`;
-            const endTime = `${rule.eh.toString().padStart(2, '0')}:${rule.em.toString().padStart(2, '0')}`;
-
+            const fmt = (h,m) => `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+            
             card.innerHTML = `
                 <div class="time-info">
-                    <span class="status-label">${active ? '● LIVE NOW' : 'Scheduled'}</span>
-                    <span class="time-range">${startTime} - ${endTime}</span>
+                    ${isActive ? '<span class="badge-live">● LIVE NOW</span>' : ''}
+                    <span class="time-range">${fmt(r.startH, r.startM)} - ${fmt(r.endH, r.endM)}</span>
+                    <span class="duration-tag">Duration: ${r.durH}h ${r.durM}m</span>
                 </div>
-                <div class="password-display">${rule.code}</div>
+                <div class="passcode">${r.code}</div>
             `;
-            listEl.appendChild(card);
+            list.appendChild(card);
         });
     }
 
-    // 4. Clock & Auto-refresh
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString();
-        renderList(); // Refresh active status every second
+    function update() {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+        renderList();
     }
 
     renderTabs();
-    setInterval(updateClock, 1000);
-    updateClock();
-
+    setInterval(update, 1000);
+    update();
 </script>
 </body>
 </html>
