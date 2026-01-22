@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Viewer</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .live-clock {
+            background: var(--primary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px 0;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+
+        .tab {
+            background: #e2e8f0;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: 0.3s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Table/Card Style */
+        .slot-card {
+            background: var(--card);
+            margin-bottom: 12px;
+            padding: 20px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+
+        .slot-card.active {
+            border-color: var(--success);
+            background-color: #f0fdf4;
+            animation: glow 2s infinite ease-in-out;
+        }
+
+        .time-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .time-range {
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+        }
+
+        .password-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--primary);
+            background: #eff6ff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            letter-spacing: 2px;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Access Passwords</h1>
+        <div id="clock" class="live-clock">00:00:00</div>
+    </header>
+
+    <div class="tabs" id="dayTabs"></div>
+    <div id="passwordList"></div>
+</div>
+
+<script>
+    // 1. PASTE YOUR RULES TEXT HERE
+    const rawRules = `
+    const PassRule rules[] = {
+        {0, HM(8,0),  HM(12,30), 000000},
+        {0, HM(12,30),HM(14,0),  111111},
+        {0, HM(14,0), HM(15,30), 101566},
+        {0, HM(15,30),HM(17,0),  749881},
+        {0, HM(17,0), HM(18,30), 368583},
+        {0, HM(18,30),HM(20,0),  482190},
+        {0, HM(20,0), HM(21,30), 103572},
+        {0, HM(21,30),HM(23,0),  765921},
+        {0, HM(23,0), HM(0,30),  796696},
+        {1, HM(8,0),  HM(12,30), "C01"},
+        {1, HM(12,30),HM(14,0),  "C02"}
+    };`;
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    let currentActiveDay = new Date().getDay();
+
+    // 2. Parser Logic
+    function parse() {
+        const regex = /\{(\d+),\s*HM\((\d+),(\d+)\),\s*HM\((\d+),(\d+)\),\s*([^}]+)\}/g;
+        const rules = [];
+        let match;
+        while ((match = regex.exec(rawRules)) !== null) {
+            rules.push({
+                day: parseInt(match[1]),
+                sh: parseInt(match[2]), sm: parseInt(match[3]),
+                eh: parseInt(match[4]), em: parseInt(match[5]),
+                code: match[6].trim().replace(/"/g, '')
+            });
+        }
+        return rules;
+    }
+
+    const allRules = parse();
+
+    // 3. UI Rendering
+    function renderTabs() {
+        const tabsEl = document.getElementById('dayTabs');
+        days.forEach((day, i) => {
+            const btn = document.createElement('button');
+            btn.className = `tab ${i === currentActiveDay ? 'active' : ''}`;
+            btn.innerText = day;
+            btn.onclick = () => {
+                currentActiveDay = i;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                btn.classList.add('active');
+                renderList();
+            };
+            tabsEl.appendChild(btn);
+        });
+    }
+
+    function isLive(rule) {
+        const now = new Date();
+        if (now.getDay() !== rule.day) return false;
+
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+        const startMins = rule.sh * 60 + rule.sm;
+        let endMins = rule.eh * 60 + rule.em;
+
+        if (endMins < startMins) endMins += 1440; // Midnight wrap
+
+        return currentMins >= (startMins - 15) && currentMins <= (endMins + 15);
+    }
+
+    function renderList() {
+        const listEl = document.getElementById('passwordList');
+        listEl.innerHTML = '';
+        
+        const filtered = allRules.filter(r => r.day === currentActiveDay);
+
+        filtered.forEach(rule => {
+            const active = isLive(rule);
+            const card = document.createElement('div');
+            card.className = `slot-card ${active ? 'active' : ''}`;
+            
+            const startTime = `${rule.sh.toString().padStart(2, '0')}:${rule.sm.toString().padStart(2, '0')}`;
+            const endTime = `${rule.eh.toString().padStart(2, '0')}:${rule.em.toString().padStart(2, '0')}`;
+
+            card.innerHTML = `
+                <div class="time-info">
+                    <span class="status-label">${active ? '● LIVE NOW' : 'Scheduled'}</span>
+                    <span class="time-range">${startTime} - ${endTime}</span>
+                </div>
+                <div class="password-display">${rule.code}</div>
+            `;
+            listEl.appendChild(card);
+        });
+    }
+
+    // 4. Clock & Auto-refresh
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString();
+        renderList(); // Refresh active status every second
+    }
+
+    renderTabs();
+    setInterval(updateClock, 1000);
+    updateClock();
+
+</script>
+</body>
+</html>
